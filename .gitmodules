@@ -1,0 +1,6 @@
+[submodule "Vendor/glm"]
+	path = Vendor/glm
+	url = https://github.com/g-truc/glm.git
+[submodule "Vendor/DiligentEngine"]
+	path = Vendor/DiligentEngine
+	url = https://github.com/DiligentGraphics/DiligentEngine.git
