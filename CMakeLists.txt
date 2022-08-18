@@ -42,3 +42,9 @@ elseif(PLATFORM_LINUX)
         "\"$<TARGET_FILE:Diligent-GraphicsEngineOpenGL-shared>\""
         "\"$<TARGET_FILE_DIR:Obhasa>\"")
 endif()
+
+# Copy resources
+add_custom_target(copy_assets
+    COMMAND ${CMAKE_COMMAND} -E copy_directory 
+    "${CMAKE_SOURCE_DIR}/Resources/" "$<TARGET_FILE_DIR:Obhasa>/Resources")
+add_dependencies(Obhasa copy_assets)

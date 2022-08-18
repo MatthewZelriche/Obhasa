@@ -63,6 +63,46 @@ int main()
       abort();
    }
 
+   GraphicsPipelineStateCreateInfo PSOCreateInfo;
+   PSOCreateInfo.PSODesc.Name = "Basic pipeline";
+   PSOCreateInfo.GraphicsPipeline.NumRenderTargets = 1;
+   PSOCreateInfo.GraphicsPipeline.RTVFormats[0] = m_SwapChain->GetDesc().ColorBufferFormat;
+   PSOCreateInfo.GraphicsPipeline.DSVFormat = m_SwapChain->GetDesc().DepthBufferFormat;
+   PSOCreateInfo.GraphicsPipeline.PrimitiveTopology = PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+   PSOCreateInfo.GraphicsPipeline.RasterizerDesc.CullMode = CULL_MODE_BACK;
+   PSOCreateInfo.GraphicsPipeline.DepthStencilDesc.DepthEnable = True;
+   PSOCreateInfo.PSODesc.ResourceLayout.DefaultVariableType = SHADER_RESOURCE_VARIABLE_TYPE_STATIC;
+
+   RefCntAutoPtr<IShaderSourceInputStreamFactory> shaderSourceFact;
+   vulkEngine->CreateDefaultShaderSourceStreamFactory(nullptr, &shaderSourceFact);
+   ShaderCreateInfo shaderCreateInfo;
+   shaderCreateInfo.pShaderSourceStreamFactory = shaderSourceFact;
+   shaderCreateInfo.SourceLanguage = SHADER_SOURCE_LANGUAGE_HLSL;
+   shaderCreateInfo.UseCombinedTextureSamplers = True;
+
+   RefCntAutoPtr<IShader> vertShaderProgram;
+   {
+      shaderCreateInfo.Desc.Name = "Vertex Shader";
+      shaderCreateInfo.Desc.ShaderType = SHADER_TYPE_VERTEX;
+      shaderCreateInfo.EntryPoint = "main";
+      shaderCreateInfo.FilePath = "Resources/Shaders/vert.hlsl";
+      m_Device->CreateShader(shaderCreateInfo, &vertShaderProgram);
+   }
+   PSOCreateInfo.pVS = vertShaderProgram;
+
+   RefCntAutoPtr<IShader> fragShaderProgram;
+   {
+      shaderCreateInfo.Desc.Name = "Fragment Shader";
+      shaderCreateInfo.Desc.ShaderType = SHADER_TYPE_PIXEL;
+      shaderCreateInfo.EntryPoint = "main";
+      shaderCreateInfo.FilePath = "Resources/Shaders/frag.hlsl";
+      m_Device->CreateShader(shaderCreateInfo, &fragShaderProgram);
+   }
+   PSOCreateInfo.pPS = fragShaderProgram;
+
+   RefCntAutoPtr<IPipelineState> PSO;
+   m_Device->CreateGraphicsPipelineState(PSOCreateInfo, &PSO);
+
    while (!glfwWindowShouldClose(m_Window))
    {
       glfwPollEvents();
@@ -73,9 +113,14 @@ int main()
 
       const float ClearColor[] = {1.0f, 0.0f, 0.0f, 1.0f};
       m_Context->ClearRenderTarget(pRTV, ClearColor, RESOURCE_STATE_TRANSITION_MODE_TRANSITION);
+      m_Context->ClearDepthStencil(pDSV, CLEAR_DEPTH_FLAG, 1.f, 0, RESOURCE_STATE_TRANSITION_MODE_TRANSITION);
+
+      m_Context->SetPipelineState(PSO);
+
+      DrawAttribs drawAttrs;
+      drawAttrs.NumVertices = 3;
+      m_Context->Draw(drawAttrs);
 
       m_SwapChain->Present();
-   }
-}
    }
 }
