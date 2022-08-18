@@ -25,6 +25,7 @@
 #include "Graphics/GraphicsEngineOpenGL/interface/EngineFactoryOpenGL.h"
 #endif
 
+#include "Common/interface/BasicMath.hpp"
 #include "GLFW/glfw3native.h"
 
 using namespace Diligent;
@@ -63,6 +64,11 @@ int main()
       abort();
    }
 
+   // Describe vertex attrib layout.
+   LayoutElement elems;
+   elems.NumComponents = 4;
+   elems.ValueType = VT_FLOAT32;
+
    GraphicsPipelineStateCreateInfo PSOCreateInfo;
    PSOCreateInfo.PSODesc.Name = "Basic pipeline";
    PSOCreateInfo.GraphicsPipeline.NumRenderTargets = 1;
@@ -71,8 +77,12 @@ int main()
    PSOCreateInfo.GraphicsPipeline.PrimitiveTopology = PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
    PSOCreateInfo.GraphicsPipeline.RasterizerDesc.CullMode = CULL_MODE_BACK;
    PSOCreateInfo.GraphicsPipeline.DepthStencilDesc.DepthEnable = True;
+   PSOCreateInfo.GraphicsPipeline.RasterizerDesc.FillMode = FILL_MODE_SOLID;
    PSOCreateInfo.PSODesc.ResourceLayout.DefaultVariableType = SHADER_RESOURCE_VARIABLE_TYPE_STATIC;
+   PSOCreateInfo.GraphicsPipeline.InputLayout.LayoutElements = &elems;
+   PSOCreateInfo.GraphicsPipeline.InputLayout.NumElements = 1;
 
+   // Create shader programs.
    RefCntAutoPtr<IShaderSourceInputStreamFactory> shaderSourceFact;
    vulkEngine->CreateDefaultShaderSourceStreamFactory(nullptr, &shaderSourceFact);
    ShaderCreateInfo shaderCreateInfo;
@@ -100,6 +110,22 @@ int main()
    }
    PSOCreateInfo.pPS = fragShaderProgram;
 
+   // Create vertex buffer
+   RefCntAutoPtr<IBuffer> vertBuf;
+   float4 pos[3];
+   pos[0] = float4(-0.5, -0.5, 0.0, 1.0);
+   pos[1] = float4(0.0, 0.5, 0.0, 1.0);
+   pos[2] = float4(0.5, -0.5, 0.0, 1.0);
+   BufferDesc vertBufDesc;
+   vertBufDesc.Name = "Vertex Buffer";
+   vertBufDesc.Usage = USAGE_IMMUTABLE;
+   vertBufDesc.BindFlags = BIND_VERTEX_BUFFER;
+   vertBufDesc.Size = sizeof(pos);
+   BufferData vertBufData;
+   vertBufData.DataSize = vertBufDesc.Size;
+   vertBufData.pData = pos;
+   m_Device->CreateBuffer(vertBufDesc, &vertBufData, &vertBuf);
+
    RefCntAutoPtr<IPipelineState> PSO;
    m_Device->CreateGraphicsPipelineState(PSOCreateInfo, &PSO);
 
@@ -115,6 +141,7 @@ int main()
       m_Context->ClearRenderTarget(pRTV, ClearColor, RESOURCE_STATE_TRANSITION_MODE_TRANSITION);
       m_Context->ClearDepthStencil(pDSV, CLEAR_DEPTH_FLAG, 1.f, 0, RESOURCE_STATE_TRANSITION_MODE_TRANSITION);
 
+      m_Context->SetVertexBuffers(0, 1, &vertBuf, nullptr, RESOURCE_STATE_TRANSITION_MODE_TRANSITION, SET_VERTEX_BUFFERS_FLAG_RESET);
       m_Context->SetPipelineState(PSO);
 
       DrawAttribs drawAttrs;
